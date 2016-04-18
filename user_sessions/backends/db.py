@@ -13,12 +13,20 @@ class SessionStore(SessionBase):
     """
     Implements database session store.
     """
-    def __init__(self, user_agent, ip, session_key=None):
+    def __init__(self, user_agent=None, ip=None, session_key=None):
         super(SessionStore, self).__init__(session_key)
         # Truncate user_agent string to max_length of the CharField
-        self.user_agent = user_agent[:200] if user_agent else user_agent
-        self.ip = ip
+        if user_agent is None and ip is None:
+            self.user_agent = ""
+            self.ip = ""
+            self.is_websocket = True
+        else:
+            self.user_agent = user_agent[:200] if user_agent else user_agent
+            self.ip = ip
+            self.is_websocket = True
+
         self.user_id = None
+
 
     def __setitem__(self, key, value):
         if key == auth.SESSION_KEY:
@@ -31,10 +39,11 @@ class SessionStore(SessionBase):
                 session_key=self.session_key,
                 expire_date__gt=timezone.now()
             )
-            self.user_id = s.user_id
-            # do not overwrite user_agent/ip, as those might have been updated
-            if self.user_agent != s.user_agent or self.ip != s.ip:
-                self.modified = True
+            if not self.is_websocket:
+                self.user_id = s.user_id
+                # do not overwrite user_agent/ip, as those might have been updated
+                if self.user_agent != s.user_agent or self.ip != s.ip:
+                    self.modified = True
             return self.decode(s.session_data)
         except (Session.DoesNotExist, SuspiciousOperation) as e:
             if isinstance(e, SuspiciousOperation):
