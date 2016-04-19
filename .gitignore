@@ -9,3 +9,5 @@
 /.tox/
 
 /docs/_build/
+
+__pycache__
