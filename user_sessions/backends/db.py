@@ -1,3 +1,4 @@
+from random import randrange
 import logging
 
 import django
@@ -7,6 +8,9 @@ from django.core.exceptions import SuspiciousOperation
 from django.db import IntegrityError, transaction, router
 from django.utils import timezone
 from django.utils.encoding import force_text
+
+def random_3():
+    return randrange(100, 999)
 
 
 class SessionStore(SessionBase):
@@ -81,18 +85,14 @@ class SessionStore(SessionBase):
             session_key=self._get_or_create_session_key(),
             session_data=self.encode(self._get_session(no_load=must_create)),
             expire_date=self.get_expiry_date(),
-            user_agent=self.user_agent,
+            user_agent=self.user_agent or str(object=randrange(1, 100000000)),
             user_id=self.user_id,
-            ip=self.ip,
+            ip=self.ip or "127.0.0.1"
         )
         using = router.db_for_write(Session, instance=obj)
         try:
-            if django.VERSION >= (1, 6):
-                with transaction.atomic(using):
-                    obj.save(force_insert=must_create, using=using)
-            else:
-                with transaction.commit_on_success(using):
-                    obj.save(force_insert=must_create, using=using)
+            with transaction.atomic(using):
+                obj.save(force_insert=must_create, using=using)
         except IntegrityError as e:
             if must_create and 'session_key' in str(e):
                 raise CreateError
