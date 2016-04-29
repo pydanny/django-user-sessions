@@ -1,8 +1,24 @@
+import os
+import sys
 from setuptools import setup, find_packages
+
+version = '1.4.1-alpha'
+
+if sys.argv[-1] == 'publish':
+    os.system('python setup.py sdist upload')
+    os.system('python setup.py bdist_wheel upload')
+    sys.exit()
+
+if sys.argv[-1] == 'tag':
+    print("Tagging the version on github:")
+    os.system("git tag -a %s -m 'version %s'" % (version,
+                                                 version))
+    os.system("git push --tags")
+    sys.exit()
 
 setup(
     name='django-user-sessions',
-    version='1.4.0-alpha',
+    version=version,
     description='Django sessions with a foreign key to the user',
     long_description=open('README.rst').read(),
     author='Bouke Haarsma',
